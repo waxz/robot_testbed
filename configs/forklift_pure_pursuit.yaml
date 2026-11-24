@@ -1,0 +1,34 @@
+# Forklift AGV following a closed path with pure pursuit (classic geometric path tracking).
+name: forklift_pure_pursuit
+sim:
+  model: {xml: "${config_dir}/../robots/forklift/forklift.xml"}
+  control_dt: 0.02
+  keyframe: home
+robot:
+  root_body: base
+sensors:
+  - {type: joint_state}
+  - {type: base_pose, body: base}                     # ground truth (try pose_sensor: odom below)
+  - {type: wheel_odometry, name: odom, left_joint: wheel_left_joint, right_joint: wheel_right_joint,
+     wheel_radius: 0.15, track_width: 0.84}
+  - {type: body_pose, name: pallet, body: pallet}
+command:
+  type: waypoints
+  points: [[0, 0], [3, -2.2], [6.5, -2.2], [6.5, 2.2], [0, 2.2]]
+  speed: 0.8
+  loop: true
+controller:
+  type: diff_drive
+  left_joint: wheel_left_joint
+  right_joint: wheel_right_joint
+  wheel_radius: 0.15
+  track_width: 0.84
+  lookahead: 0.8
+  pose_sensor: base_pose
+  max_speed: 1.5
+viewer: {port: 8090}
+checks:                                  # measured 2026-11-24: cross-track mean 0.25 m, max 0.66 m (corners)
+  - {metric: trace.cross_track_m, agg: mean, after: 8, max: 0.35}
+  - {metric: trace.cross_track_m, agg: max, after: 8, max: 0.9}
+  - {metric: trace.segment, agg: max, min: 4}          # went all the way round the loop
+  - {metric: timing_ms.realtime_factor, min: 1.0}

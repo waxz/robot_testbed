@@ -1,0 +1,34 @@
+# Franka Panda (MuJoCo Menagerie) reaching a draggable end-effector target with differential IK.
+name: panda_diff_ik
+sim:
+  model: {menagerie: franka_emika_panda, entry: scene}
+  control_dt: 0.02
+  keyframe: home
+robot:
+  joints: [joint1, joint2, joint3, joint4, joint5, joint6, joint7]
+  extra_ctrl: {actuator8: 255}          # gripper open
+sensors:
+  - {type: joint_state}
+  - {type: body_pose, name: hand, body: hand}
+command:
+  type: pose_target
+  position: [0.554, 0.0, 0.625]          # hand position at the "home" keyframe
+  quat: [0.0, 1.0, 0.0, 0.0]
+  orientation: false
+  script:                                # headless: a square in a vertical plane, then back
+    - [1.0, {position: [0.55, 0.25, 0.55]}]
+    - [3.0, {position: [0.55, 0.25, 0.30]}]
+    - [5.0, {position: [0.55, -0.25, 0.30]}]
+    - [7.0, {position: [0.55, -0.25, 0.55]}]
+    - [9.0, {position: [0.554, 0.0, 0.625]}]
+controller:
+  type: diff_ik
+  joints: [joint1, joint2, joint3, joint4, joint5, joint6, joint7]
+  body: hand
+  kp_pos: 4.0
+  damping: 0.05
+viewer: {port: 8092}
+checks:                                  # measured 2026-11-24: settled errors 0.02-0.34 cm, final 0.00
+  - {metric: trace.pos_err_cm, agg: max, at: [2.5, 4.5, 6.5, 8.5, 10.5], max: 0.6}   # 1.5 s after each target jump
+  - {metric: final_status.pos_err_cm, max: 0.2}
+  - {metric: timing_ms.realtime_factor, min: 1.0}

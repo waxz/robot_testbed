@@ -1,0 +1,43 @@
+# Forklift teleop: drive (v, w) and lift. Headless script drives into the pallet, lifts it and backs out.
+name: forklift_teleop
+sim:
+  model: {xml: "${config_dir}/../robots/forklift/forklift.xml"}
+  control_dt: 0.02
+  keyframe: home
+robot:
+  root_body: base
+sensors:
+  - {type: joint_state}
+  - {type: base_pose, body: base}
+  - {type: body_pose, name: pallet, body: pallet}
+command:
+  type: joystick
+  axes: {v: [-1.0, 1.5, 0.0], w: [-1.5, 1.5, 0.0], lift: [0.0, 1.2, 0.0]}
+  presets:
+    forward: {v: 0.5, w: 0.0}
+    stop: {v: 0.0, w: 0.0}
+    lift up: {lift: 0.35}
+    lift down: {lift: 0.0}
+  script:            # [time_s, values]: the forks slide under the pallet deck, lift, reverse
+    # The carriage plate is 0.58 m ahead of the base origin and the pallet front edge is at x = 3.4,
+    # so stop near x = 2.7 (forks 3.28-4.08 under the 3.4-4.6 deck, plate clear of the pallet).
+    - [0.0, {v: 0.0, w: 0.0, lift: 0.0}]
+    - [0.5, {v: 0.4}]
+    - [7.3, {v: 0.0}]
+    - [8.5, {lift: 0.35}]
+    - [11.0, {v: -0.3}]
+    - [15.0, {v: 0.0}]
+controller:
+  type: diff_drive
+  left_joint: wheel_left_joint
+  right_joint: wheel_right_joint
+  wheel_radius: 0.15
+  track_width: 0.84
+  lift_joint: lift_joint
+viewer: {port: 8091}
+checks:                                  # measured 2026-11-24: pallet z 0.277 m, x 2.81 m, truck level
+  - {metric: final_state.pallet.pos.2, min: 0.2}       # lifted
+  - {metric: final_state.pallet.pos.0, max: 3.2}       # carried back from x = 4.0
+  - {metric: final_state.pallet.quat.0, min: 0.99}     # not tumbled (total rotation < ~16 deg)
+  - {metric: final_state.base_pose.pos.2, max: 0.22}   # truck did not tip
+  - {metric: timing_ms.realtime_factor, min: 1.0}

@@ -1,0 +1,23 @@
+# Unitree Go2 (MuJoCo Menagerie, torque motors) holding its "home" stance with joint PD.
+# Baseline for legged controllers: replace the controller with an RL policy or a convex MPC + WBC later.
+name: go2_pd_stand
+sim:
+  model: {menagerie: unitree_go2, entry: scene}
+  control_dt: 0.02
+  keyframe: home
+robot:
+  root_body: base
+sensors:
+  - {type: joint_state}
+  - {type: imu, body: base}
+  - {type: base_pose, body: base}
+controller:
+  type: pd_hold
+  kp: 40.0
+  kd: 1.5
+episode_s: 30
+viewer: {port: 8093}
+checks:                                  # measured 2026-11-24: base at 0.236 m, 0 falls
+  - {metric: falls, max: 0}
+  - {metric: final_state.base_pose.pos.2, min: 0.2, max: 0.3}
+  - {metric: timing_ms.realtime_factor, min: 1.0}

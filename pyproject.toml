@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "robot-testbed"
+version = "0.1.0"
+description = "Config-driven MuJoCo test bed for humanoid, legged, arm and wheeled robots with learned and classic controllers"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["mujoco>=3.2", "numpy", "pyyaml", "viser", "mjviser"]
+
+[project.optional-dependencies]
+menagerie = ["mujoco-menagerie"]          # robots fetched by name (Go2, Panda, ...)
+rl = ["onnxruntime", "torch"]             # rl_tracking controller (also needs the mimic_joystick / SuperMimic sources)
+mpc = ["osqp", "casadi"]                  # MPC controllers (roadmap M1-M4)
+
+[project.scripts]
+testbed = "testbed.run:main"
+testbed-check = "testbed.check:main"
+
+[tool.setuptools.packages.find]
+include = ["testbed*"]

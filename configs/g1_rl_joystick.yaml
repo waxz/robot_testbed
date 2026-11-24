@@ -1,0 +1,39 @@
+# Unitree G1: exported SuperMimic tracker (ONNX) + joystick motion-matching streamer.
+# Export first:  cd ~/dev/robot_world/mimic_joystick && python export_onnx.py
+name: g1_rl_joystick
+paths:
+  export: ~/dev/supermimic_reproduction_by_godot/outputs/deploy/base_flat
+sim:
+  model: {mjb: "${self.paths.export}/scene.mjb"}
+  control_dt: 0.02
+robot:
+  root_body: pelvis
+sensors:
+  - {type: joint_state}
+  - {type: imu, body: pelvis}
+  - {type: base_pose, body: pelvis}                 # ground truth stand-in for a state estimator
+  - {type: body_pose, name: torso_pose, body: torso_link}
+command:
+  type: joystick
+  axes: {vx: [-0.8, 2.5, 0.0], vy: [-0.5, 0.5, 0.0], wz: [-1.2, 1.2, 0.0]}
+  presets:
+    walk: {vx: 1.0, vy: 0.0, wz: 0.0}
+    run: {vx: 2.0, vy: 0.0, wz: 0.0}
+    circle: {vx: 0.8, vy: 0.0, wz: 0.6}
+    stop: {vx: 0.0, vy: 0.0, wz: 0.0}
+  script:
+    - [2.0, {vx: 0.5}]
+    - [6.0, {vx: 1.0}]
+    - [10.0, {vx: 0.8, wz: 0.6}]
+    - [15.0, {vx: 2.0, wz: 0.0}]
+    - [19.0, {vx: 0.0}]
+controller:
+  type: rl_tracking
+  export_dir: "${self.paths.export}"
+  backend: ort-cpu                                  # ort-cpu | ort-cuda | torch-cpu | torch-cuda
+  streamer_device: cpu
+  python_paths: [~/dev/robot_world/mimic_joystick, ~/dev/supermimic_reproduction_by_godot/src]
+viewer: {port: 8094}
+checks:                                  # measured 2026-11-24: 0 falls over the 21 s course, 5.4x real time on CPU
+  - {metric: falls, max: 0}
+  - {metric: timing_ms.realtime_factor, min: 1.0}

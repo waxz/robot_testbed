@@ -1,0 +1,5 @@
+# The code runs inside WSL (Linux): keep LF line endings in the working copy on every platform.
+* text=auto eol=lf
+*.mjb binary
+*.stl binary
+*.png binary

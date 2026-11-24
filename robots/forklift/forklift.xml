@@ -1,0 +1,78 @@
+<!-- Small differential-drive forklift AGV for the test bed (dimensions loosely based on a pallet stacker).
+     Base: free body "base"; two driven wheels (velocity actuators); two low-friction rear casters.
+     Mast: prismatic "lift" joint carrying two forks (position actuator, 0-1.2 m). A pallet sits ahead of the robot. -->
+<mujoco model="forklift_agv">
+  <compiler angle="radian" autolimits="true"/>
+  <option timestep="0.005" integrator="implicitfast"/>
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3"/>
+  </visual>
+  <asset>
+    <texture name="grid" type="2d" builtin="checker" rgb1="0.82 0.82 0.80" rgb2="0.74 0.74 0.72" width="512" height="512"/>
+    <material name="floor" texture="grid" texrepeat="40 40"/>
+    <material name="body" rgba="0.95 0.7 0.1 1"/>
+    <material name="dark" rgba="0.15 0.15 0.15 1"/>
+    <material name="steel" rgba="0.55 0.57 0.6 1"/>
+    <material name="wood" rgba="0.62 0.45 0.25 1"/>
+  </asset>
+  <default>
+    <geom condim="3" friction="1.0 0.02 0.001"/>
+    <!-- MuJoCo mixes friction as the MAX of the two geoms, so without priority the floor's 1.0 would win and the
+         "frictionless" casters would drag; priority=1 makes these values apply to caster contacts. -->
+    <default class="caster">
+      <geom type="sphere" size="0.06" friction="0.01 0.001 0.0001" priority="1" material="dark"/>
+    </default>
+  </default>
+
+  <worldbody>
+    <geom name="floor" type="plane" size="40 40 0.1" material="floor" group="0"/>
+
+    <body name="base" pos="0 0 0.2">
+      <freejoint name="base_free"/>
+      <!-- counterweighted: 400 kg with the centre of mass well behind the drive axle, so a load on the forks
+           (in front of the axle) cannot tip the truck forward -->
+      <inertial pos="-0.3 0 0" mass="400" diaginertia="25 45 55"/>
+      <geom name="chassis" type="box" size="0.55 0.38 0.12" pos="-0.1 0 0.05" material="body" group="2"/>
+      <geom name="cab" type="box" size="0.18 0.3 0.35" pos="-0.45 0 0.5" material="body" group="2"/>
+      <geom name="caster_l" class="caster" pos="-0.55 0.28 -0.14"/>
+      <geom name="caster_r" class="caster" pos="-0.55 -0.28 -0.14"/>
+      <body name="wheel_left" pos="0.32 0.42 -0.05">
+        <joint name="wheel_left_joint" type="hinge" axis="0 1 0" damping="0.5"/>
+        <geom type="cylinder" size="0.15 0.04" zaxis="0 1 0" mass="8" material="dark"/>
+      </body>
+      <body name="wheel_right" pos="0.32 -0.42 -0.05">
+        <joint name="wheel_right_joint" type="hinge" axis="0 1 0" damping="0.5"/>
+        <geom type="cylinder" size="0.15 0.04" zaxis="0 1 0" mass="8" material="dark"/>
+      </body>
+      <geom name="mast_l" type="box" size="0.03 0.03 0.8" pos="0.5 0.25 0.65" material="steel" group="2"/>
+      <geom name="mast_r" type="box" size="0.03 0.03 0.8" pos="0.5 -0.25 0.65" material="steel" group="2"/>
+      <body name="carriage" pos="0.55 0 -0.12">
+        <joint name="lift_joint" type="slide" axis="0 0 1" range="0 1.2" damping="200"/>
+        <geom type="box" size="0.03 0.3 0.15" pos="0 0 0.15" mass="20" material="steel"/>
+        <geom name="fork_l" type="box" size="0.4 0.05 0.02" pos="0.43 0.2 0.0" mass="10" material="steel"/>
+        <geom name="fork_r" type="box" size="0.4 0.05 0.02" pos="0.43 -0.2 0.0" mass="10" material="steel"/>
+        <site name="fork_tip" pos="0.83 0 0.0" size="0.02"/>
+      </body>
+    </body>
+
+    <!-- pallet: deck on three runners; the forks fit between the runners -->
+    <body name="pallet" pos="4.0 0 0.0">
+      <freejoint name="pallet_free"/>
+      <geom type="box" size="0.6 0.5 0.02" pos="0 0 0.14" mass="15" material="wood"/>
+      <geom type="box" size="0.6 0.05 0.06" pos="0 0.42 0.06" mass="4" material="wood"/>
+      <geom type="box" size="0.6 0.05 0.06" pos="0 0 0.06" mass="4" material="wood"/>
+      <geom type="box" size="0.6 0.05 0.06" pos="0 -0.42 0.06" mass="4" material="wood"/>
+      <geom type="box" size="0.3 0.3 0.15" pos="0 0 0.31" mass="40" rgba="0.3 0.45 0.7 1"/>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <velocity name="wheel_left" joint="wheel_left_joint" kv="250" forcerange="-700 700"/>
+    <velocity name="wheel_right" joint="wheel_right_joint" kv="250" forcerange="-700 700"/>
+    <position name="lift" joint="lift_joint" kp="20000" kv="2000" ctrlrange="0 1.2" forcerange="-6000 6000"/>
+  </actuator>
+
+  <keyframe>
+    <key name="home" qpos="0 0 0.2 1 0 0 0  0 0 0  4.0 0 0 1 0 0 0"/>
+  </keyframe>
+</mujoco>
